@@ -1,20 +1,19 @@
-import type { Products } from '@/interfaces/products'
+import 'server-only'
+import { internalizeMedia, routeApiUrl, safeExternalStatus } from '@/API/server'
 import type { WishlistResponse } from '@/interfaces/shop'
 
-const API_URL = 'https://ecommerce.routemisr.com/api/v1/wishlist'
-
 async function wishlistRequest(token: string, path = '', init: RequestInit = {}) {
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(routeApiUrl(`/wishlist${path}`), {
     ...init,
     headers: { token, 'Content-Type': 'application/json', ...init.headers },
   })
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
-    const error = new Error(payload?.message ?? 'Wishlist request failed')
-    Object.assign(error, { status: response.status })
+    const error = new Error('Wishlist request failed')
+    Object.assign(error, { status: safeExternalStatus(response.status) })
     throw error
   }
-  return payload as WishlistResponse
+  return internalizeMedia(payload) as WishlistResponse
 }
 
 export function getWishlistWithToken(token: string) {
@@ -30,9 +29,4 @@ export function addToWishlistWithToken(token: string, productId: string) {
 
 export function removeFromWishlistWithToken(token: string, productId: string) {
   return wishlistRequest(token, `/${encodeURIComponent(productId)}`, { method: 'DELETE' })
-}
-
-export function getWishlistProducts(response: WishlistResponse): Products[] {
-  if (Array.isArray(response.data)) return response.data
-  return response.data?.products ?? []
 }

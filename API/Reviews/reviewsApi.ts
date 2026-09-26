@@ -1,25 +1,25 @@
+import 'server-only'
+import { routeApiUrl, safeExternalStatus } from '@/API/server'
 import type { Review } from '@/interfaces/products'
 
-const API_URL = 'https://ecommerce.routemisr.com/api/v1'
-
 async function sendReviewRequest<T>(token: string, path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(routeApiUrl(path), {
     ...init,
     headers: { token, 'Content-Type': 'application/json', ...init.headers },
   })
   const payload = await response.json().catch(() => null)
   if (!response.ok) {
-    const error = new Error(payload?.message ?? 'Review request failed')
-    Object.assign(error, { status: response.status })
+    const error = new Error('Review request failed')
+    Object.assign(error, { status: safeExternalStatus(response.status) })
     throw error
   }
   return payload as T
 }
 
 export async function getAllReviews(): Promise<Review[]> {
-  const response = await fetch(`${API_URL}/reviews`, { cache: 'no-store' })
+  const response = await fetch(routeApiUrl('/reviews'), { cache: 'no-store' })
   const payload = await response.json().catch(() => null)
-  if (!response.ok) throw new Error(payload?.message ?? 'Failed to load reviews')
+  if (!response.ok) throw new Error('Failed to load reviews')
   return payload?.data ?? []
 }
 

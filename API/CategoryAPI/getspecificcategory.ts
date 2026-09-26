@@ -1,8 +1,7 @@
 import 'server-only'
+import { internalizeMedia, routeApiUrl } from '@/API/server'
 import type { Category } from '@/interfaces/category'
 import type { Subcategory } from '@/interfaces/shop'
-
-const API_URL = (process.env.API ?? 'https://ecommerce.routemisr.com/api/v1').replace(/\/+$/, '')
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -33,14 +32,14 @@ async function getCategoryData<T>(path: string, validate: (value: unknown) => bo
     throw new Error('Invalid category API path.')
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(routeApiUrl(path), {
     next: { revalidate: 300 },
     signal: AbortSignal.timeout(8000),
   })
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new Error(isObject(payload) && typeof payload.message === 'string' ? payload.message : 'Could not load categories.')
   if (!isObject(payload) || !('data' in payload) || !validate(payload.data)) throw new Error('The category service returned invalid data.')
-  return payload.data as T
+  return internalizeMedia(payload.data) as T
 }
 
 export async function getCategories(): Promise<Category[]> {

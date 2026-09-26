@@ -5,12 +5,16 @@ import { useDispatch } from 'react-redux'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
 import type { Products } from '@/interfaces/products'
-import { getWishlistProducts } from '@/API/Wishlist/wishlistApi'
 import type { WishlistResponse } from '@/interfaces/shop'
 import { clearWishlist, setWishlist } from '@/lib/store/wishlistSlice'
 import type { AppDispatch } from '@/lib/store'
 
 export const WISHLIST_QUERY_KEY = ['wishlist'] as const
+
+function getWishlistProducts(response: WishlistResponse): Products[] {
+  if (Array.isArray(response.data)) return response.data
+  return response.data?.products ?? []
+}
 
 async function fetchWishlist(): Promise<Products[]> {
   const response = await fetch('/api/wishlist')

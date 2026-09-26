@@ -1,6 +1,6 @@
+import 'server-only'
+import { internalizeMedia, routeApiUrl, safeExternalStatus } from '@/API/server'
 import type { CartResponse } from '@/interfaces/cart'
-
-const CART_API_URL = 'https://ecommerce.routemisr.com/api/v2/cart'
 
 export class CartApiError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -10,14 +10,14 @@ export class CartApiError extends Error {
 }
 
 async function requestCart<T>(token: string, path = '', init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${CART_API_URL}${path}`, {
+  const response = await fetch(routeApiUrl(`/cart${path}`, 2), {
     ...init,
     headers: { token, 'Content-Type': 'application/json', ...init.headers },
   })
   const payload = await response.json().catch(() => null)
 
-  if (!response.ok) throw new CartApiError(payload?.message ?? 'Cart request failed', response.status)
-  return payload as T
+  if (!response.ok) throw new CartApiError('Cart request failed', safeExternalStatus(response.status))
+  return internalizeMedia(payload) as T
 }
 
 export function getCartWithToken(token: string) {

@@ -1,8 +1,9 @@
 import { getToken } from 'next-auth/jwt'
 import { NextRequest, NextResponse } from 'next/server'
 import { isValidObjectId, rejectCrossOriginRequest } from '@/utilities/apiSecurity'
+import { routeApiUrl, safeExternalStatus } from '@/API/server'
 
-const API = 'https://ecommerce.routemisr.com/api/v1/addresses'
+const API = routeApiUrl('/addresses')
 async function proxyRequest(req: NextRequest, method: 'GET' | 'POST' | 'DELETE', body?: unknown) {
   if (method !== 'GET') {
     const originError = rejectCrossOriginRequest(req)
@@ -24,6 +25,7 @@ async function proxyRequest(req: NextRequest, method: 'GET' | 'POST' | 'DELETE',
   try {
     const response = await fetch(method === 'DELETE' ? `${API}/${encodeURIComponent(addressId as string)}` : API, { method, headers: { token: session.token, 'Content-Type': 'application/json' }, ...(body && method !== 'DELETE' ? { body: JSON.stringify(body) } : {}), cache: 'no-store' })
     const payload = await response.json().catch(() => null)
+    if (!response.ok) return NextResponse.json({ message: 'Could not update your saved addresses.' }, { status: safeExternalStatus(response.status) })
     return NextResponse.json(payload ?? {}, { status: response.status })
   } catch {
     return NextResponse.json({ message: 'Could not reach the address service.' }, { status: 502 })
@@ -52,12 +54,12 @@ export async function PUT(req: NextRequest) {
   try {
     const beforeResponse = await fetch(API, { headers, cache: 'no-store' })
     const beforePayload = await beforeResponse.json().catch(() => null) as { data?: { _id?: string }[] } | null
-    if (!beforeResponse.ok) return NextResponse.json({ message: 'Could not verify your saved addresses before editing.' }, { status: beforeResponse.status })
+    if (!beforeResponse.ok) return NextResponse.json({ message: 'Could not verify your saved addresses before editing.' }, { status: safeExternalStatus(beforeResponse.status) })
     const previousIds = new Set((beforePayload?.data ?? []).map(address => address._id).filter((id): id is string => Boolean(id)))
 
     const createResponse = await fetch(API, { method: 'POST', headers, body: JSON.stringify(addressData), cache: 'no-store' })
     const createdAddress = await createResponse.json().catch(() => null) as { data?: { _id?: string } | { _id?: string }[]; _id?: string; message?: string } | null
-    if (!createResponse.ok) return NextResponse.json(createdAddress ?? { message: 'Could not save the updated address.' }, { status: createResponse.status })
+    if (!createResponse.ok) return NextResponse.json({ message: 'Could not save the updated address.' }, { status: safeExternalStatus(createResponse.status) })
 
     const returnedAddresses = Array.isArray(createdAddress?.data) ? createdAddress.data : []
     let newAddressId = (Array.isArray(createdAddress?.data) ? undefined : createdAddress?.data?._id) ?? createdAddress?._id

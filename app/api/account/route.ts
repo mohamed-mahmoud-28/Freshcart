@@ -1,8 +1,9 @@
 import { getToken } from 'next-auth/jwt'
 import { NextRequest, NextResponse } from 'next/server'
 import { rejectCrossOriginRequest } from '@/utilities/apiSecurity'
+import { routeApiUrl } from '@/API/server'
 
-const API = 'https://ecommerce.routemisr.com/api/v1/users'
+const API = routeApiUrl('/users')
 
 async function updateAccount(request: NextRequest, path: string, body: unknown) {
   const originError = rejectCrossOriginRequest(request)
@@ -12,7 +13,7 @@ async function updateAccount(request: NextRequest, path: string, body: unknown) 
   try {
     const response = await fetch(`${API}${path}`, { method: 'PUT', headers: { token: session.token, 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' })
     const payload = await response.json().catch(() => null)
-    return NextResponse.json({ status: payload?.status, message: payload?.message }, { status: response.status, headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ status: payload?.status, message: response.status >= 500 ? 'Could not update your account. Please try again.' : payload?.message }, { status: response.status >= 500 ? 502 : response.status, headers: { 'Cache-Control': 'no-store' } })
   } catch {
     return NextResponse.json({ message: 'Could not reach the account service.' }, { status: 502 })
   }

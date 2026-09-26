@@ -76,12 +76,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Purpose | Example |
 | --- | --- | --- |
-| `API` | Route E-commerce API base URL | `https://ecommerce.routemisr.com/api/v1/` |
+| `API` | Server-only Route E-commerce API base URL (the `/api` root; `/api/v1` is also accepted) | `https://ecommerce.routemisr.com/api` |
 | `NEXTAUTH_URL` | The app URL used by NextAuth | `http://localhost:3000` |
 | `NEXTAUTH_SECRET` | Secret used to protect authentication sessions | Generate a long, random value |
 | `NEXT_PUBLIC_SITE_URL` | Public site URL used for canonical metadata and sitemap links | `https://your-domain.com` |
 
-Never commit `.env.local` or real secrets. For deployment, set `NEXTAUTH_URL` and `NEXT_PUBLIC_SITE_URL` to the public HTTPS domain. Replace the example domain before publishing.
+Never commit `.env.local` or real secrets. `API` is read only by server-side code and must never use a `NEXT_PUBLIC_` prefix. For deployment, set `NEXTAUTH_URL` and `NEXT_PUBLIC_SITE_URL` to the public HTTPS domain. Replace the example domain before publishing.
 
 ## Scripts
 

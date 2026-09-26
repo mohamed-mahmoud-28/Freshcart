@@ -1,8 +1,7 @@
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { jwtDecode } from "jwt-decode";
-
-const apiBase = (process.env.API ?? 'https://ecommerce.routemisr.com/api/v1').replace(/\/+$/, '')
+import { routeApiUrl } from '@/API/server'
 
 const Authoption: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -34,7 +33,7 @@ const Authoption: AuthOptions = {
         let response: Response;
         let payload: { message?: string; token?: string; user?: { id?: string; _id?: string; name?: string; email?: string; phone?: string } };
         try {
-          response = await fetch(`${apiBase}/auth/signin`, {
+          response = await fetch(routeApiUrl('/auth/signin'), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: credentials.email, password: credentials.password }),

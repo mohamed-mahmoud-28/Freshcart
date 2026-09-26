@@ -1,13 +1,13 @@
+import 'server-only'
+import { internalizeMedia, routeApiUrl } from '@/API/server'
 import type { Brand, Subcategory } from '@/interfaces/shop'
 import type { Products, Review } from '@/interfaces/products'
 
-const API_URL = 'https://ecommerce.routemisr.com/api/v1'
-
 async function getData<T>(path: string, noCache = false): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, noCache ? { cache: 'no-store' } : { next: { revalidate: 300 } })
+  const response = await fetch(routeApiUrl(path), noCache ? { cache: 'no-store' } : { next: { revalidate: 300 } })
   const payload = await response.json().catch(() => null)
-  if (!response.ok) throw new Error(payload?.message ?? 'Failed to load data')
-  return payload?.data as T
+  if (!response.ok) throw new Error('External catalog request failed')
+  return internalizeMedia(payload?.data) as T
 }
 
 export function getProducts() {

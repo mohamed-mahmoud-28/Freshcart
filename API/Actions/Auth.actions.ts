@@ -1,6 +1,7 @@
 'use server'
 
 import { schema } from '@/Schema/Register/register';
+import { routeApiUrl } from '@/API/server'
 import * as zod from 'zod';
 
 type UserData = zod.infer<typeof schema>;
@@ -16,7 +17,7 @@ export async function userRegister(data: UserData) {
 
   try {
     const response = await fetch(
-      'https://ecommerce.routemisr.com/api/v1/auth/signup',
+      routeApiUrl('/auth/signup'),
       {
         method: 'POST',
         headers: {
@@ -26,11 +27,11 @@ export async function userRegister(data: UserData) {
       }
     );
 
-    const result = await response.json();
+    const result = await response.json().catch(() => null);
 
     return {
       success: response.ok,
-      message: result.message,
+      message: response.status >= 500 ? 'Could not create your account. Please try again.' : typeof result?.message === 'string' ? result.message : (response.ok ? 'Registration successful.' : 'Could not create your account.'),
     };
 
   } catch {
@@ -40,4 +41,3 @@ export async function userRegister(data: UserData) {
     };
   }
 }
-

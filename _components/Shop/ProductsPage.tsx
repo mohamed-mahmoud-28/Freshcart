@@ -6,7 +6,6 @@ import { ChevronDown, Grid2X2, List, Search, SlidersHorizontal } from 'lucide-re
 import type { Products } from '@/interfaces/products'
 import type { Brand } from '@/interfaces/shop'
 import type { Category } from '@/interfaces/category'
-import { getBrands, getProducts } from '@/API/Shop/shopApi'
 import ProductCard from '@/_components/Home/Products/ProductCard'
 
 type Props = { initialCategory?: string; initialBrand?: string; initialSubcategory?: string; initialSearch?: string }
@@ -55,12 +54,17 @@ export default function ProductsPage({ initialCategory = '', initialBrand = '', 
   useEffect(() => {
     async function loadCatalog() {
       try {
-        const [productData, categoryResponse, brandData] = await Promise.all([getProducts(), fetch('/api/categories').then(async response => {
+        async function loadData<T>(endpoint: string): Promise<T> {
+          const response = await fetch(endpoint)
           const payload = await response.json().catch(() => null)
-          if (!response.ok) throw new Error(payload?.message ?? 'Could not load categories.')
-          return payload?.data as Category[]
-        }), getBrands()])
-        const categoryData = categoryResponse
+          if (!response.ok) throw new Error(payload?.message ?? 'Could not load catalog data.')
+          return payload?.data as T
+        }
+        const [productData, categoryData, brandData] = await Promise.all([
+          loadData<Products[]>('/api/products'),
+          loadData<Category[]>('/api/categories'),
+          loadData<Brand[]>('/api/brands'),
+        ])
         setProducts(productData)
         setCategories(categoryData)
         setBrands(brandData)

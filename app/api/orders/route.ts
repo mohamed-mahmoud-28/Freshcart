@@ -1,8 +1,9 @@
 import { getToken } from 'next-auth/jwt'
 import { NextRequest, NextResponse } from 'next/server'
 import { isValidObjectId, rejectCrossOriginRequest } from '@/utilities/apiSecurity'
+import { internalizeMedia, routeApiUrl } from '@/API/server'
 
-const API = 'https://ecommerce.routemisr.com/api/v1/orders'
+const API = routeApiUrl('/orders')
 
 async function auth(request: NextRequest) {
   const session = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(`${API}/user/${encodeURIComponent(userId)}`, { headers: { token }, cache: 'no-store' })
     const body = await response.json().catch(() => null)
-    return NextResponse.json(body ?? { message: 'Could not load orders.' }, { status: response.status })
+    if (!response.ok) return NextResponse.json({ message: response.status >= 500 ? 'Could not load orders. Please try again.' : body?.message ?? 'Could not load orders.' }, { status: response.status >= 500 ? 502 : response.status })
+    return NextResponse.json(internalizeMedia(body ?? { message: 'Could not load orders.' }), { status: response.status })
   } catch {
     return NextResponse.json({ message: 'Could not reach the orders service.' }, { status: 502 })
   }
@@ -35,12 +37,13 @@ export async function POST(request: NextRequest) {
   }
   const origin = new URL(request.url).origin
   const online = body.payment === 'online'
-  const checkoutUrl = new URL(online ? `/checkout-session/${encodeURIComponent(body.cartId)}` : `https://ecommerce.routemisr.com/api/v2/orders/${encodeURIComponent(body.cartId)}`, API)
+  const checkoutUrl = new URL(online ? routeApiUrl(`/checkout-session/${encodeURIComponent(body.cartId)}`, 1) : routeApiUrl(`/orders/${encodeURIComponent(body.cartId)}`, 2))
   if (online) checkoutUrl.searchParams.set('url', origin)
   try {
     const response = await fetch(checkoutUrl, { method: 'POST', headers: { token, 'Content-Type': 'application/json' }, body: JSON.stringify({ shippingAddress: { details: body.shippingAddress.details.trim(), phone: body.shippingAddress.phone.trim(), city: body.shippingAddress.city.trim() } }), cache: 'no-store' })
     const payload = await response.json().catch(() => null)
-    return NextResponse.json(payload ?? { message: 'Checkout could not be started.' }, { status: response.status })
+    if (!response.ok) return NextResponse.json({ message: response.status >= 500 ? 'Checkout could not be started. Please try again.' : payload?.message ?? 'Checkout could not be started.' }, { status: response.status >= 500 ? 502 : response.status })
+    return NextResponse.json(internalizeMedia(payload ?? { message: 'Checkout could not be started.' }), { status: response.status })
   } catch {
     return NextResponse.json({ message: 'Could not reach the checkout service.' }, { status: 502 })
   }
