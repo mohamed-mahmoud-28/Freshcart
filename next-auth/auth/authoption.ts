@@ -29,27 +29,43 @@ const Authoption: AuthOptions = {
       },
 
       async authorize(credentials) {
-        const response = await fetch(`${apiBase}/auth/signin`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: credentials?.email,
-            password: credentials?.password,
-          }),
-        });
+        if (!credentials?.email || !credentials.password) return null;
 
-        const payload = await response.json();
+        let response: Response;
+        let payload: { message?: string; token?: string; user?: { id?: string; _id?: string; name?: string; email?: string; phone?: string } };
+        try {
+          response = await fetch(`${apiBase}/auth/signin`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+          });
+          payload = await response.json();
+        } catch {
+          // Keep backend/network failures inside the credentials flow instead of
+          // allowing an unhandled exception to send users to the generic auth error page.
+          throw new Error("Authentication service is unavailable");
+        }
 
         if (!response.ok) {
           throw new Error(payload?.message || "Login failed");
         }
 
-        const userdata: { id?: string } = payload?.token ? jwtDecode(payload.token) : {};
+        let userdata: { id?: string } = {};
+        if (payload?.token) {
+          try {
+            userdata = jwtDecode(payload.token);
+          } catch {
+            throw new Error("Authentication service returned an invalid token");
+          }
+        }
+
+        const id = userdata.id || payload?.user?.id || payload?.user?._id;
+        if (!payload?.token || !id) {
+          throw new Error("Authentication service returned an invalid response");
+        }
 
         return {
-          id: userdata.id || payload?.user?.id || payload?.user?._id || "",
+          id,
           name: payload?.user?.name,
           email: payload?.user?.email,
           phone: payload?.user?.phone,
