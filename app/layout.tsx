@@ -6,6 +6,8 @@ import Footer from "@/_components/layout/footer/Footer";
 import Provider from './../_components/Provider/Provider';
 import Providers from './../_components/Provider/makeQueryClient';
 import ReduxProvider from '@/_components/Provider/ReduxProvider';
+import { getAppInitialData } from '@/API/initialData'
+import type { RootState } from '@/lib/store'
 
 export const metadata: Metadata = {
   metadataBase: process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL) : undefined,
@@ -30,17 +32,22 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const { session, categories, initialCart, initialWishlist } = await getAppInitialData()
+  const initialState: Partial<RootState> = {
+    cart: { data: initialCart ?? null, itemCount: initialCart?.data?.products.reduce((sum, item) => sum + item.count, 0) ?? initialCart?.numOfCartItems ?? 0 },
+    ...(initialWishlist ? { wishlist: initialWishlist.map(product => product._id) } : {}),
+  }
   return (
     <html
       lang="en"
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">
-        <ReduxProvider>
-         <Providers>
-          <Provider>
-            <NavbarShell />
+        <ReduxProvider initialState={initialState}>
+         <Providers initialCart={initialCart} initialWishlist={initialWishlist}>
+          <Provider session={session}>
+            <NavbarShell categories={categories} />
             <main className="min-h-screen pt-17 lg:pt-26.5">
               <Toaster />
               {children}

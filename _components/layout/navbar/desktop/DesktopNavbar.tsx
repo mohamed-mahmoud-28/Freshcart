@@ -16,15 +16,7 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
 import type { Category } from "@/interfaces/category";
-
-async function fetchCategories(): Promise<Category[]> {
-  const response = await fetch('/api/categories')
-  const payload = await response.json().catch(() => null)
-  if (!response.ok) throw new Error(payload?.message ?? 'Could not load categories.')
-  return payload?.data ?? []
-}
 
 const featuredCategoryNames = ["Electronics", "Women's Fashion", "Men's Fashion", "Beauty & Health"];
 
@@ -40,11 +32,10 @@ function getCategoryMenuItems(categories: Category[]) {
   ];
 }
 
-export default function DesktopNavbar({ isScrolled }: { isScrolled: boolean }) {
+export default function DesktopNavbar({ isScrolled, categories }: { isScrolled: boolean; categories: Category[] }) {
 
   const { status } = useSession();
-  const { data: categoryData = [] } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories, staleTime: 5 * 60 * 1000, retry: false });
-  const categoryMenuItems = getCategoryMenuItems(categoryData);
+  const categoryMenuItems = getCategoryMenuItems(categories);
 
   return (
     <header className={`fixed left-0 z-40 hidden w-full border-b border-slate-100 bg-white transition-[top] duration-300 motion-reduce:transition-none lg:block ${isScrolled ? "top-0" : "top-[38px]"}`}>

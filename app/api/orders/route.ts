@@ -2,8 +2,7 @@ import { getToken } from 'next-auth/jwt'
 import { NextRequest, NextResponse } from 'next/server'
 import { isValidObjectId, rejectCrossOriginRequest } from '@/utilities/apiSecurity'
 import { internalizeMedia, routeApiUrl } from '@/API/server'
-
-const API = routeApiUrl('/orders')
+import { getOrdersWithToken } from '@/API/Orders/ordersApi'
 
 async function auth(request: NextRequest) {
   const session = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
@@ -14,10 +13,7 @@ export async function GET(request: NextRequest) {
   const { token, userId } = await auth(request)
   if (!token || !userId) return NextResponse.json({ message: 'Please sign in to view your orders.' }, { status: 401 })
   try {
-    const response = await fetch(`${API}/user/${encodeURIComponent(userId)}`, { headers: { token }, cache: 'no-store' })
-    const body = await response.json().catch(() => null)
-    if (!response.ok) return NextResponse.json({ message: response.status >= 500 ? 'Could not load orders. Please try again.' : body?.message ?? 'Could not load orders.' }, { status: response.status >= 500 ? 502 : response.status })
-    return NextResponse.json(internalizeMedia(body ?? { message: 'Could not load orders.' }), { status: response.status })
+    return NextResponse.json(await getOrdersWithToken(token, userId))
   } catch {
     return NextResponse.json({ message: 'Could not reach the orders service.' }, { status: 502 })
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { BookOpen, Check, CircleUserRound, RotateCcw, ShieldCheck, Star, Truck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import type { Products, Review } from "@/interfaces/products";
@@ -52,28 +52,13 @@ function CheckMark() { return <Check className="text-emerald-600" size={16} aria
 function Reviews({ productId, initialReviews, average }: { productId: string; initialReviews: Review[]; average: number }) {
     const { data: session, status } = useSession();
     const [reviews, setReviews] = useState(initialReviews);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = false;
     const [error, setError] = useState("");
     const [formOpen, setFormOpen] = useState(false);
     const [reviewText, setReviewText] = useState("");
     const [rating, setRating] = useState(5);
     const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-
-    useEffect(() => {
-        let isActive = true;
-        fetchReviews(productId).then((nextReviews) => {
-            if (isActive) {
-                setReviews(nextReviews);
-                setError("");
-            }
-        }).catch((loadError: unknown) => {
-            if (isActive) setError(loadError instanceof Error ? loadError.message : "Could not load reviews.");
-        }).finally(() => {
-            if (isActive) setIsLoading(false);
-        });
-        return () => { isActive = false; };
-    }, [productId]);
 
     async function saveReview(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -88,11 +73,18 @@ function Reviews({ productId, initialReviews, average }: { productId: string; in
             });
             const payload = await response.json();
             if (!response.ok) throw new Error(payload?.message ?? "Could not save review.");
+            const savedReview = payload?.data as Review | undefined
             setReviewText("");
             setRating(5);
             setEditingReviewId(null);
             setFormOpen(false);
-            setReviews(await fetchReviews(productId));
+            if (savedReview?._id) {
+                setReviews((current) => current.some((review) => review._id === savedReview._id)
+                    ? current.map((review) => review._id === savedReview._id ? savedReview : review)
+                    : [savedReview, ...current]);
+            } else {
+                setReviews(await fetchReviews(productId));
+            }
         } catch (saveError) {
             setError(saveError instanceof Error ? saveError.message : "Could not save review.");
         } finally {

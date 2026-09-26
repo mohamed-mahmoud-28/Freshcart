@@ -57,16 +57,16 @@ async function applyCartCoupon(coupon: string) {
 export function useCart() {
   const queryClient = useQueryClient()
   const { status } = useSession()
-  const query = useQuery({ queryKey: CART_QUERY_KEY, queryFn: fetchCart, enabled: status === 'authenticated', retry: false })
+  const query = useQuery({ queryKey: CART_QUERY_KEY, queryFn: fetchCart, enabled: status === 'authenticated', retry: false, staleTime: Infinity, refetchOnWindowFocus: false })
   const dispatch = useDispatch<AppDispatch>()
   useEffect(() => { if (query.data) dispatch(setCart(query.data)) }, [dispatch, query.data])
   const quantityMutation = useMutation({
     mutationFn: updateCartQuantity,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY }),
+    onSuccess: (cart) => queryClient.setQueryData(CART_QUERY_KEY, cart),
   })
   const deleteMutation = useMutation({
     mutationFn: deleteCartItems,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY }),
+    onSuccess: (cart) => queryClient.setQueryData(CART_QUERY_KEY, cart),
   })
   const couponMutation = useMutation({
     mutationFn: applyCartCoupon,

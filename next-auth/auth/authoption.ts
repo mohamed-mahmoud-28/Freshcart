@@ -5,6 +5,7 @@ import { routeApiUrl } from '@/API/server'
 
 const Authoption: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
+  useSecureCookies: process.env.NODE_ENV === 'production',
   session: {
     strategy: "jwt",
   },

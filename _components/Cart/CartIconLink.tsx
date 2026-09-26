@@ -23,9 +23,11 @@ export default function CartIconLink({ className = '' }: CartIconLinkProps) {
     queryKey: CART_QUERY_KEY,
     enabled: status === 'authenticated',
     queryFn: fetchCart,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   })
   const cartState = useSelector((state: RootState) => state.cart)
-  const itemCount = cartState.data ? cartState.itemCount : data?.data?.products.reduce((sum, item) => sum + item.count, 0) ?? data?.numOfCartItems ?? 0
+  const itemCount = data ? data.data?.products.reduce((sum, item) => sum + item.count, 0) ?? data.numOfCartItems ?? 0 : cartState.itemCount
 
   return (
     <Link href="/cart" aria-label={`Cart${itemCount ? `, ${itemCount} items` : ''}`} className={`relative flex h-12 w-12 items-center justify-center rounded-full text-[#64748B] transition-all duration-200 hover:scale-105 hover:bg-[#F0FDF4] hover:text-[#16A34A] active:scale-95 ${className}`}>

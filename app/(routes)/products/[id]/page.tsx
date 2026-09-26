@@ -4,12 +4,14 @@ import Slider, { type SliderItem } from "@/_components/Slider/Slider";
 import ProductPurchase from "@/_components/Products/ProductPurchase";
 import ProductTabs from "@/_components/Products/ProductTabs";
 import { getProduct } from "@/API/ProductsAPI/GetAllProducts";
+import { getProductReviews } from '@/API/Shop/shopApi'
 
 type ProductPageProps = { params: Promise<{ id: string }> };
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
-  const product = await getProduct(id);
+  const [product, reviews] = await Promise.all([getProduct(id), getProductReviews(id).catch(() => [])])
+  product.reviews = reviews
   const galleryItems: SliderItem[] = [product.imageCover, ...product.images]
     .filter((image, index, images) => images.indexOf(image) === index)
     .map((image) => ({
@@ -102,7 +104,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           </section>
         </div>
-        <ProductTabs product={product} />
+        <ProductTabs key={product._id} product={product} />
       </div>
     </main>
   );

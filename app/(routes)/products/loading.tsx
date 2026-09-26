@@ -1,0 +1,3 @@
+export default function ProductsLoading() {
+  return <main className="min-h-[calc(100vh-120px)] bg-[#fbfcfd] px-4 py-8"><div className="mx-auto max-w-[1600px]"><div className="h-10 w-56 animate-pulse rounded-lg bg-slate-100"/><div className="mt-8 grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]"><div className="hidden h-[520px] animate-pulse rounded-2xl bg-slate-100 lg:block"/><div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 2xl:grid-cols-3">{Array.from({ length: 8 }, (_, index) => <div key={index} className="h-[420px] animate-pulse rounded-xl bg-slate-100" />)}</div></div></div></main>
+}

@@ -33,7 +33,7 @@ export default function AddToCartButton({
   const { mutate, isPending: isLoading } = useMutation({
     mutationFn: addToCart,
     onSuccess: (data) => {
-      void queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY });
+      queryClient.setQueryData(CART_QUERY_KEY, data);
       toast.add({
         type: "success",
         description: data?.message ?? "Product added successfully to your cart",

@@ -1,5 +1,5 @@
 import 'server-only'
-import { internalizeMedia, routeApiUrl } from '@/API/server'
+import { internalizeMedia, isExternalMediaUrl, routeApiUrl } from '@/API/server'
 import type { Category } from '@/interfaces/category'
 import type { Subcategory } from '@/interfaces/shop'
 
@@ -12,12 +12,7 @@ function isCategory(value: unknown): value is Category {
   if (typeof value._id !== 'string' || !/^[a-f\d]{24}$/i.test(value._id)) return false
   if (typeof value.name !== 'string' || value.name.length > 150 || typeof value.slug !== 'string' || value.slug.length > 180) return false
   if (typeof value.image !== 'string' || value.image.length > 1000) return false
-
-  try {
-    return new URL(value.image).hostname === 'ecommerce.routemisr.com' && new URL(value.image).protocol === 'https:'
-  } catch {
-    return false
-  }
+  return isExternalMediaUrl(value.image)
 }
 
 function isSubcategory(value: unknown): value is Subcategory {

@@ -44,11 +44,13 @@ export function useWishlist() {
     queryFn: fetchWishlist,
     enabled: status === 'authenticated',
     retry: false,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   })
   useEffect(() => { if (status === 'unauthenticated') { dispatch(clearWishlist()); queryClient.removeQueries({ queryKey: WISHLIST_QUERY_KEY }) } else dispatch(setWishlist(query.data?.map((product) => product._id) ?? [])) }, [dispatch, query.data, queryClient, status])
   const mutation = useMutation({
     mutationFn: changeWishlist,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: WISHLIST_QUERY_KEY }),
+    onSuccess: (response) => queryClient.setQueryData(WISHLIST_QUERY_KEY, getWishlistProducts(response)),
   })
 
   return {

@@ -2,6 +2,7 @@ import { getToken } from 'next-auth/jwt'
 import { NextRequest, NextResponse } from 'next/server'
 import { isValidObjectId, rejectCrossOriginRequest } from '@/utilities/apiSecurity'
 import { routeApiUrl, safeExternalStatus } from '@/API/server'
+import { getAddressesWithToken } from '@/API/Addresses/addressesApi'
 
 const API = routeApiUrl('/addresses')
 async function proxyRequest(req: NextRequest, method: 'GET' | 'POST' | 'DELETE', body?: unknown) {
@@ -23,6 +24,7 @@ async function proxyRequest(req: NextRequest, method: 'GET' | 'POST' | 'DELETE',
     return NextResponse.json({ message: 'A valid address ID is required.' }, { status: 400 })
   }
   try {
+    if (method === 'GET') return NextResponse.json(await getAddressesWithToken(session.token))
     const response = await fetch(method === 'DELETE' ? `${API}/${encodeURIComponent(addressId as string)}` : API, { method, headers: { token: session.token, 'Content-Type': 'application/json' }, ...(body && method !== 'DELETE' ? { body: JSON.stringify(body) } : {}), cache: 'no-store' })
     const payload = await response.json().catch(() => null)
     if (!response.ok) return NextResponse.json({ message: 'Could not update your saved addresses.' }, { status: safeExternalStatus(response.status) })

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown, Grid2X2, List, Search, SlidersHorizontal } from 'lucide-react'
 import type { Products } from '@/interfaces/products'
@@ -8,7 +8,7 @@ import type { Brand } from '@/interfaces/shop'
 import type { Category } from '@/interfaces/category'
 import ProductCard from '@/_components/Home/Products/ProductCard'
 
-type Props = { initialCategory?: string; initialBrand?: string; initialSubcategory?: string; initialSearch?: string }
+type Props = { products: Products[]; categories: Category[]; brands: Brand[]; loadError?: string; initialCategory?: string; initialBrand?: string; initialSubcategory?: string; initialSearch?: string }
 type ProductFiltersProps = {
   idPrefix: string
   categories: Category[]
@@ -36,10 +36,7 @@ function ProductFilters({ idPrefix, categories, brands, search, selectedCategory
   </>
 }
 
-export default function ProductsPage({ initialCategory = '', initialBrand = '', initialSubcategory = '', initialSearch = '' }: Props) {
-  const [products, setProducts] = useState<Products[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
+export default function ProductsPage({ products, categories, brands, loadError = '', initialCategory = '', initialBrand = '', initialSubcategory = '', initialSearch = '' }: Props) {
   const [search, setSearch] = useState(initialSearch)
   const [selectedCategory, setSelectedCategory] = useState(initialCategory)
   const [selectedBrand, setSelectedBrand] = useState(initialBrand)
@@ -48,34 +45,7 @@ export default function ProductsPage({ initialCategory = '', initialBrand = '', 
   const [maxPrice, setMaxPrice] = useState('')
   const [sortBy, setSortBy] = useState('featured')
   const [layout, setLayout] = useState<'grid' | 'list'>('grid')
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    async function loadCatalog() {
-      try {
-        async function loadData<T>(endpoint: string): Promise<T> {
-          const response = await fetch(endpoint)
-          const payload = await response.json().catch(() => null)
-          if (!response.ok) throw new Error(payload?.message ?? 'Could not load catalog data.')
-          return payload?.data as T
-        }
-        const [productData, categoryData, brandData] = await Promise.all([
-          loadData<Products[]>('/api/products'),
-          loadData<Category[]>('/api/categories'),
-          loadData<Brand[]>('/api/brands'),
-        ])
-        setProducts(productData)
-        setCategories(categoryData)
-        setBrands(brandData)
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : 'Could not load products.')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    void loadCatalog()
-  }, [])
+  const isLoading = false
 
   const visibleProducts = useMemo(() => {
     let result = products.filter((product) => {
@@ -129,7 +99,7 @@ export default function ProductsPage({ initialCategory = '', initialBrand = '', 
         <section aria-label="Products" className="min-w-0">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-[#788497]">Showing {isLoading ? '…' : visibleProducts.length} products</p><div className="flex items-center gap-2"><div className="flex rounded-lg border border-[#e5e9ee] bg-white p-1"><button type="button" aria-label="Grid view" onClick={() => setLayout('grid')} className={`rounded p-2 ${layout === 'grid' ? 'bg-[#12a857] text-white' : 'text-slate-500 hover:text-[#079b48]'}`}><Grid2X2 size={18} /></button><button type="button" aria-label="List view" onClick={() => setLayout('list')} className={`rounded p-2 ${layout === 'list' ? 'bg-[#12a857] text-white' : 'text-slate-500 hover:text-[#079b48]'}`}><List size={18} /></button></div><label className="sr-only" htmlFor="product-sort">Sort products</label><select id="product-sort" value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="h-11 rounded-lg border border-[#e5e9ee] bg-white px-3 text-sm outline-none focus:border-[#12a857]"><option value="featured">Relevance</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="rating">Rating: High to Low</option><option value="name">Name: A to Z</option><option value="name-z">Name: Z to A</option></select></div></div>
           {(search || selectedCategory || selectedBrand || selectedSubcategory || minPrice || maxPrice) && <div className="mb-5 flex flex-wrap items-center gap-2 text-sm text-slate-500"><span>Active:</span>{search && <button type="button" onClick={() => setSearch('')} className="rounded-full bg-slate-100 px-3 py-1 transition hover:bg-slate-200">“{search}” <span aria-hidden="true">×</span></button>}{selectedCategory && <button type="button" onClick={() => setSelectedCategory('')} className="rounded-full bg-slate-100 px-3 py-1 transition hover:bg-slate-200">{categories.find((category) => category._id === selectedCategory || category.slug === selectedCategory)?.name ?? 'Category'} ×</button>}{selectedBrand && <button type="button" onClick={() => setSelectedBrand('')} className="rounded-full bg-slate-100 px-3 py-1 transition hover:bg-slate-200">{brands.find((brand) => brand._id === selectedBrand || brand.slug === selectedBrand)?.name ?? 'Brand'} ×</button>}{selectedSubcategory && <button type="button" onClick={() => setSelectedSubcategory('')} className="rounded-full bg-slate-100 px-3 py-1 transition hover:bg-slate-200">Subcategory ×</button>}{(minPrice || maxPrice) && <button type="button" onClick={() => { setMinPrice(''); setMaxPrice('') }} className="rounded-full bg-slate-100 px-3 py-1 transition hover:bg-slate-200">Price ×</button>}<button type="button" onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedBrand(''); setSelectedSubcategory(''); setMinPrice(''); setMaxPrice('') }} className="ml-1 text-xs text-[#079b48] underline underline-offset-2 hover:text-[#056d33]">Clear all</button></div>}
-          {isLoading ? <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 2xl:grid-cols-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((item) => <div key={item} className="h-[420px] animate-pulse rounded-xl bg-slate-100" />)}</div> : error ? <p role="alert" className="rounded-xl border border-red-100 bg-white p-8 text-center text-red-600">{error}</p> : visibleProducts.length ? <div className={layout === 'grid' ? 'grid grid-cols-1 items-start gap-3 min-[480px]:grid-cols-2 sm:gap-4 2xl:grid-cols-3' : 'grid gap-4'}>{visibleProducts.map((product) => <div key={product._id} className="w-full min-w-0"><ProductCard product={product} layout={layout} /></div>)}</div> : <div className="rounded-xl border border-dashed border-[#dce5e0] bg-white py-16 text-center"><p className="font-semibold">No products found</p><p className="mt-1 text-sm text-slate-500">Try changing your filters or search.</p><button type="button" onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedBrand(''); setSelectedSubcategory(''); setMinPrice(''); setMaxPrice('') }} className="mt-4 rounded-lg bg-[#12a857] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0d8f49]">Clear filters</button></div>}
+          {loadError ? <p role="alert" className="rounded-xl border border-red-100 bg-white p-8 text-center text-red-600">{loadError}</p> : visibleProducts.length ? <div className={layout === 'grid' ? 'grid grid-cols-1 items-start gap-3 min-[480px]:grid-cols-2 sm:gap-4 2xl:grid-cols-3' : 'grid gap-4'}>{visibleProducts.map((product) => <div key={product._id} className="w-full min-w-0"><ProductCard product={product} layout={layout} /></div>)}</div> : <div className="rounded-xl border border-dashed border-[#dce5e0] bg-white py-16 text-center"><p className="font-semibold">No products found</p><p className="mt-1 text-sm text-slate-500">Try changing your filters or search.</p><button type="button" onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedBrand(''); setSelectedSubcategory(''); setMinPrice(''); setMaxPrice('') }} className="mt-4 rounded-lg bg-[#12a857] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0d8f49]">Clear filters</button></div>}
         </section>
       </div>
     </main>
